@@ -13,13 +13,12 @@ else
 	OPT=-Og -g
 endif
 DEPFLAGS=-MP -MD
-MACROS=
-FLAGS=-Wall -Wextra $(foreach F,$(INCDIRS),-I$(F)) $(OPT) $(DEPFLAGS) $(foreach M,$(MACROS),-D$(M)) -Llib -lX11
+#MACROS=
+FLAGS=-Wall -Wextra $(foreach F,$(INCDIRS),-I$(F)) $(OPT) $(DEPFLAGS) $(foreach M,$(MACROS),-D$(M))
+LDFLAGS=lib/libglfw3.a $(FLAGS) -Llib -lX11
 
 SRC=$(shell find . -name "*.$(EXT)" -path "./src/*")
 OBJ=$(subst ./src/,./build/,$(SRC:.$(EXT)=.o))
-LIB=$(shell find . -name "*.c" -path "./lib/*")
-LIBO=$(subst ./lib/,./build/,$(LIB:.c=.o))
 TEST=$(shell find . -name "*.$(EXT)" -path "./test/*")
 TESTO=$(subst ./test/,./build/,$(TEST:.$(EXT)=.t))
 
@@ -28,15 +27,15 @@ $(shell mkdir -p build)
 
 all : $(BIN)
 
-$(BIN) : $(OBJ) $(LIBO)
-	$(CC) -o $@ $^ lib/libglfw3.a $(FLAGS)
+$(BIN) : $(OBJ) build/glad.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 -include $(OBJ:.o=.d) $(LIBO:.o=.d)
 
-build/%.o : src/%.$(EXT)
-	@mkdir -p $(@D)
+build/glad.o : lib/glad.c
 	$(CC) $(FLAGS) -o $@ -c $<
-build/%.o : lib/%.c
+
+build/%.o : src/%.$(EXT)
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -o $@ -c $<
 
