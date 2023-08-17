@@ -57,10 +57,6 @@ run : $(BIN)
 clean :
 	rm -rf build/*
 
-check :
-	cppcheck --enable=all --suppress=missingIncludeSystem $(foreach I,$(INCDIRS),-I$(I)) .
-	flawfinder .
-
 debug : $(BIN)
 	gdb $< $(input)
 
@@ -86,10 +82,10 @@ r : run
 
 t : test
 
-c : check
+c : clean
 
 p : push
 
 d : debug
 
-.PHONY : all test t alltest run r clean check c debug d dist push p install info
+.PHONY : all test t alltest run r clean c debug d dist push p install info
