@@ -4,6 +4,7 @@ Données d'entrée du shader
 
 uniform vec3      iResolution;           // viewport resolution (in pixels)
 uniform float     iTime;                 // shader playback time (in seconds)
+
 uniform float     iTimeDelta;            // render time (in seconds)
 uniform float     iFrameRate;            // shader frame rate
 uniform int       iFrame;                // shader playback frame
@@ -21,6 +22,13 @@ uniform float     iSampleRate;           // sound sample rate (i.e., 44100)
                                        Video URL: https://youtu.be/f4s1h2YETNY
 */
 
+#version 330 core
+uniform vec3 iResolution; // viewport resolution (in pixels)
+uniform float iTime;	  // shader playback time (in seconds)
+
+out vec4 fragColor;
+in vec2 fragCoord;
+
 //https://iquilezles.org/articles/palettes/
 vec3 palette( float t ) {
     vec3 a = vec3(0.5, 0.5, 0.5);
@@ -32,7 +40,7 @@ vec3 palette( float t ) {
 }
 
 //https://www.shadertoy.com/view/mtyGWy
-void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+void main(){
     vec2 uv = (fragCoord * 2.0 - iResolution.xy) / iResolution.y;
     vec2 uv0 = uv;
     vec3 finalColor = vec3(0.0);

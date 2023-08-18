@@ -21,6 +21,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+static int VIEWPORT_WIDTH = SCR_WIDTH;
+static int VIEWPORT_HEIGHT = SCR_HEIGHT;
+
 int main(){
 	GLFWwindow* window = setup();
 
@@ -55,7 +58,7 @@ GLFWwindow* setup(){
     }    
 
 	// wireframe mode
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	// activer par defaut, mode remplie
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -76,19 +79,9 @@ void processInput(GLFWwindow *window){
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
+	VIEWPORT_WIDTH = width;
+	VIEWPORT_HEIGHT = height;
     glViewport(0, 0, width, height);
-}
-
-void setMode(int* mode){
-	if (*mode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-
-void switchMode(int* mode){
-	*mode = !*mode;
-	setMode(mode);
 }
 
 void clearErr(){
@@ -110,88 +103,42 @@ void tearDown(){
 }
 
 void renderLoop(GLFWwindow* window){
-	Shader shader1("shader/1.vs", "shader/1.fs");
-	Shader shader2("shader/2.vs", "shader/2.fs");
+	Shader shader("shader/1.vs", "shader/art.fs");
 
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 1.0f,  1.0f, 0.0f,
-		 1.0f, 0.75f, 0.0f,
-		 0.75f, 1.0f, 0.0f
-	};
-	unsigned int indices[] = {
-		0, 1, 2,
-		0, 1, 3,
-		4, 5, 6
-	};
-	float vertices2[] = {
-		-0.75f, -0.5f, 1.0f, 0.0f, 0.0f, // top
-        -0.5f, -1.0f, 0.0f, 1.0f, 0.0f, // right
-        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f  // corner 
+		-0.5f, -0.5f,
+         0.0f,  0.5f,
+         0.5f, -0.5f
 	};
 
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);  
-
-	unsigned int VBO2;
-	glGenBuffers(1, &VBO2);
-	unsigned int VAO2;
-	glGenVertexArrays(1, &VAO2);
-
-	glBindVertexArray(VAO2);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
+	float time = 0.0f;
 	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
 	std::cout << std::endl;
-	int mode = 0;
     for (int i=0; !glfwWindowShouldClose(window); i++){
 		start = std::chrono::system_clock::now();
 		processInput(window);
 
-		if (!(i%20))
-			switchMode(&mode);
-		else
-			setMode(&mode);
-
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		shader1.use();
+		shader.use();
+		shader.setFloat("iTime", time);
+		shader.setFloat3("iResolution", VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0.0f);
+
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-		float offset = (std::sin(glfwGetTime()) / 2.0f) + 0.5f;
-		shader2.use();
-		shader2.setFloat("offset", offset);
-
-		glBindVertexArray(VAO2);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -200,6 +147,7 @@ void renderLoop(GLFWwindow* window){
 		std::chrono::duration<double> elapsed_seconds = end - start;
 		if (!(i%5)){
 			puts("\033[2F");
+			time += elapsed_seconds.count();
 			std::cout << "fps : " << (int)(1 / elapsed_seconds.count()) << "      " << std::endl;
 		}
     }
