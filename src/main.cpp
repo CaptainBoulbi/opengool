@@ -64,6 +64,8 @@ GLFWwindow* setup(){
         return NULL;
     }    
 
+	std::cout << glGetString(GL_VERSION) << std::endl;
+
 	return window;
 }
 
