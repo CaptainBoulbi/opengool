@@ -81,51 +81,6 @@ unsigned int compileShader(const char* code, const char* type){
 	return Shader;
 }
 
-//unsigned int loadShader(){
-//	unsigned int vertexShader;
-//	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-//	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-//	glCompileShader(vertexShader);
-//
-//	int  success;
-//	char infoLog[512];
-//	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-//	if(!success){
-//		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-//		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-//	}
-//
-//	unsigned int fragmentShader;
-//	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-//	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-//	glCompileShader(fragmentShader);
-//
-//	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-//	if(!success){
-//		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-//		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-//	}
-//
-//	unsigned int shaderProgram;
-//	shaderProgram = glCreateProgram();
-//	glAttachShader(shaderProgram, vertexShader);
-//	glAttachShader(shaderProgram, fragmentShader);
-//	glLinkProgram(shaderProgram);
-//
-//	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-//	if(!success) {
-//		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-//		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-//	}
-//
-//	glUseProgram(shaderProgram);
-//
-//	glDeleteShader(vertexShader);
-//	glDeleteShader(fragmentShader);
-//
-//	return shaderProgram;
-//}
-
 unsigned int linkingShader(unsigned int vert, unsigned int frag){
 	unsigned int prog;
 	prog = glCreateProgram();
@@ -225,17 +180,10 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 		0, 1, 3,
 		4, 5, 6
 	};
-
 	float vertices2[] = {
-		-0.75f, -0.75f, 0.0f, //mid
-		-1.00f, -0.75f, 0.0f, //left
-		-0.75f, -1.00f, 0.0f, //right
-		-0.50f, -0.75f, 0.0f, //top
-		-0.75f, -0.50f, 0.0f  //bottom
-	};
-	unsigned int indices2[] = {
-		0, 1, 3,
-		0, 2, 4
+		-1.0f, -0.5f, // left
+        -0.5f, -1.0f, // right
+        -1.0f, -1.0f  // corner 
 	};
 
 	unsigned int VBO;
@@ -259,20 +207,15 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 	glGenBuffers(1, &VBO2);
 	unsigned int VAO2;
 	glGenVertexArrays(1, &VAO2);
-	unsigned int EBO2;
-	glGenBuffers(1, &EBO2);
 
 	glBindVertexArray(VAO2);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO2);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2), indices2, GL_STATIC_DRAW); 
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);  
+    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glEnableVertexAttribArray(0);
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
+	std::cout << std::endl;
 	int mode = 0;
     for (int i=0; !glfwWindowShouldClose(window); i++){
 		start = std::chrono::system_clock::now();
@@ -294,7 +237,7 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 
 		glUseProgram(shaderProgram2);
 		glBindVertexArray(VAO2);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glBindVertexArray(0);
 
@@ -304,11 +247,10 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed_seconds = end - start;
 		if (!(i%5)){
-			std::cout << "fps : " << (int)(1 / elapsed_seconds.count()) << "      " << std::endl;
 			puts("\033[2F");
+			std::cout << "fps : " << (int)(1 / elapsed_seconds.count()) << "      " << std::endl;
 		}
     }
-	std::cout << std::endl;
 
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
