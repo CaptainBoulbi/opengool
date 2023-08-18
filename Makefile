@@ -13,7 +13,7 @@ else
 	OPT=-Og -g
 endif
 DEPFLAGS=-MP -MD
-#MACROS=
+MACROS=DEBUG=1
 FLAGS=-Wall -Wextra $(foreach F,$(INCDIRS),-I$(F)) $(OPT) $(DEPFLAGS) $(foreach M,$(MACROS),-D$(M))
 LDFLAGS=lib/libglfw3.a $(FLAGS) -Llib -lX11
 
@@ -30,7 +30,8 @@ all : $(BIN)
 $(BIN) : $(OBJ) build/glad.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
--include $(OBJ:.o=.d) $(LIBO:.o=.d)
+-include $(OBJ:.o=.d)
+#$(LIBO:.o=.d)
 
 build/glad.o : lib/glad.c
 	$(CC) $(FLAGS) -o $@ -c $<
