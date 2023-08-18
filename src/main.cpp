@@ -5,6 +5,9 @@
 #include <cassert>
 #include <cstring>
 #include <chrono>
+#include <cmath>
+
+#include "shader.hpp"
 
 GLFWwindow* setup();
 void renderLoop(GLFWwindow* window);
@@ -58,45 +61,12 @@ GLFWwindow* setup(){
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
+	// min 16 vec4
+	int nrAttributes;
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+	std::cout << "Maximum nb of vertex attributes supported: " << nrAttributes << std::endl;
+
 	return window;
-}
-
-unsigned int compileShader(const char* code, const char* type){
-	unsigned int Shader;
-	if (!strcmp(type, "VERTEX"))
-		Shader = glCreateShader(GL_VERTEX_SHADER);
-	else
-		Shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(Shader, 1, &code, NULL);
-	glCompileShader(Shader);
-
-	int  success;
-	glGetShaderiv(Shader, GL_COMPILE_STATUS, &success);
-	if(!success){
-	char infoLog[512];
-		glGetShaderInfoLog(Shader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::" << type << "::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return 0;
-	}
-	return Shader;
-}
-
-unsigned int linkingShader(unsigned int vert, unsigned int frag){
-	unsigned int prog;
-	prog = glCreateProgram();
-	glAttachShader(prog, vert);
-	glAttachShader(prog, frag);
-	glLinkProgram(prog);
-
-	int  success;
-	glGetProgramiv(prog, GL_LINK_STATUS, &success);
-	if(!success) {
-		char infoLog[512];
-		glGetProgramInfoLog(prog, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-		return 0;
-	}
-	return prog;
 }
 
 void processInput(GLFWwindow *window){
@@ -140,31 +110,8 @@ void tearDown(){
 }
 
 void renderLoop(GLFWwindow* window){
-	const char *vertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"}\0";
-	const char *fragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-		"}\0";
-	const char *fragmentShaderSource2 = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 0.5f, 0.7f, 1.0f);\n"
-		"}\0";
-
-	unsigned int vertexShader = compileShader(vertexShaderSource, "VERTEX");
-	unsigned int fragmentShader = compileShader(fragmentShaderSource, "FRAGMENT");
-	unsigned int fragmentShader2 = compileShader(fragmentShaderSource2, "FRAGMENT");
-
-unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
-	unsigned int shaderProgram2 = linkingShader(vertexShader, fragmentShader2);
+	Shader shader1("shader/1.vs", "shader/1.fs");
+	Shader shader2("shader/2.vs", "shader/2.fs");
 
 	float vertices[] = {
 		-0.5f, -0.5f, 0.0f,
@@ -181,9 +128,9 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 		4, 5, 6
 	};
 	float vertices2[] = {
-		-1.0f, -0.5f, // left
-        -0.5f, -1.0f, // right
-        -1.0f, -1.0f  // corner 
+		-0.75f, -0.5f, 1.0f, 0.0f, 0.0f, // top
+        -0.5f, -1.0f, 0.0f, 1.0f, 0.0f, // right
+        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f  // corner 
 	};
 
 	unsigned int VBO;
@@ -211,8 +158,10 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 	glBindVertexArray(VAO2);
     glBindBuffer(GL_ARRAY_BUFFER, VBO2);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	std::cout << std::endl;
@@ -229,13 +178,16 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glUseProgram(shaderProgram);
+		shader1.use();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glUseProgram(shaderProgram2);
+		float offset = (std::sin(glfwGetTime()) / 2.0f) + 0.5f;
+		shader2.use();
+		shader2.setFloat("offset", offset);
+
 		glBindVertexArray(VAO2);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -251,9 +203,6 @@ unsigned int shaderProgram = linkingShader(vertexShader, fragmentShader);
 			std::cout << "fps : " << (int)(1 / elapsed_seconds.count()) << "      " << std::endl;
 		}
     }
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 
 	clearErr();
 	getErr();
