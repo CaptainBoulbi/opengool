@@ -21,19 +21,24 @@ SRC=$(shell find . -name "*.$(EXT)" -path "./src/*")
 OBJ=$(subst ./src/,./build/,$(SRC:.$(EXT)=.o))
 TEST=$(shell find . -name "*.$(EXT)" -path "./test/*")
 TESTO=$(subst ./test/,./build/,$(TEST:.$(EXT)=.t))
+LIB=glad stb_image_imp
+LIBO=$(foreach L,$(LIB),build/$(L).l)
 
 $(shell mkdir -p build)
 
 
 all : $(BIN)
+	echo $(LIB)
+	echo $(LIBO)
 
-$(BIN) : $(OBJ) build/glad.o
+$(BIN) : $(OBJ) $(LIBO) #build/glad.o build/stb_image_imp.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 -include $(OBJ:.o=.d)
 #$(LIBO:.o=.d)
 
-build/glad.o : lib/glad.c
+build/%.l : lib/%.*
+	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -o $@ -c $<
 
 build/%.o : src/%.$(EXT)
@@ -70,7 +75,7 @@ push :
 	git push bbsrv
 	git push gh
 
-install : dist
+install :
 	mv build/$(PROJECTNAME).tgz $$HOME/dev/opt/archive
 
 info :
