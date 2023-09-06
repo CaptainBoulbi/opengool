@@ -124,10 +124,10 @@ void renderLoop(GLFWwindow* window){
 	stbi_image_free(data);
 
 	float vertices[] = {
-		0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-		0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
+		0.5f,  0.5f, 1.0f, 1.0f,
+		0.5f, -0.5f, 1.0f, 0.0f,
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f, 1.0f
 	};
 	unsigned int indices[] = {
 		0, 1, 3,
@@ -189,7 +189,7 @@ void renderLoop(GLFWwindow* window){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glBindTexture(GL_TEXTURE_2D, texture);
+		//glBindTexture(GL_TEXTURE_2D, texture);
 
 		shader1.use();
 		glBindVertexArray(VAO);
