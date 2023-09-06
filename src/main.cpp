@@ -1,5 +1,6 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "glad/glad.h"
+#include "GLFW/glfw3.h"
+#include "stb_image.h"
 
 #include <iostream>
 #include <cassert>
@@ -79,26 +80,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
 }
 
-void setMode(int* mode){
-	if (*mode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-
-void switchMode(int* mode){
-	*mode = !*mode;
-	setMode(mode);
-}
-
 void clearErr(){
-	std::cout << "All Error" << std::endl;
+	std::cout << "CLEAR ERROR" << std::endl;
 	unsigned int err = glGetError();
-	while (err){
+	do{
 		std::cout << err << std::endl;
 		err = glGetError();
-	};
-	std::cout << "Done with all err" << std::endl;
+	}while (err);
+	std::cout << "DONE CLEARING ERROR" << std::endl;
 }
 
 void getErr(){
@@ -113,24 +102,41 @@ void renderLoop(GLFWwindow* window){
 	Shader shader1("shader/1.vs", "shader/1.fs");
 	Shader shader2("shader/2.vs", "shader/2.fs");
 
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load("data/bestpp.jpg", &width, &height, &nrChannels, 0);
+
+	if (data){
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}else{
+		std::cout << "Failled to load texture" << std::endl;
+	}
+
+	stbi_image_free(data);
+
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 1.0f,  1.0f, 0.0f,
-		 1.0f, 0.75f, 0.0f,
-		 0.75f, 1.0f, 0.0f
+		0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
 	};
 	unsigned int indices[] = {
-		0, 1, 2,
 		0, 1, 3,
-		4, 5, 6
+		1, 2, 3,
 	};
 	float vertices2[] = {
-		-0.75f, -0.5f, 1.0f, 0.0f, 0.0f, // top
-        -0.5f, -1.0f, 0.0f, 1.0f, 0.0f, // right
-        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f  // corner 
+		-0.75f,-0.5f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
 	};
 
 	unsigned int VBO;
@@ -147,8 +153,19 @@ void renderLoop(GLFWwindow* window){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);  
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);  
+
+	// jsp ou mettre sa
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	//// pour clamp at border ajouter quelle couleur faire
+	////float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	////glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	//// map la couleur des pixels par defaut
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	unsigned int VBO2;
 	glGenBuffers(1, &VBO2);
@@ -165,22 +182,18 @@ void renderLoop(GLFWwindow* window){
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	std::cout << std::endl;
-	int mode = 0;
     for (int i=0; !glfwWindowShouldClose(window); i++){
 		start = std::chrono::system_clock::now();
 		processInput(window);
 
-		if (!(i%20))
-			switchMode(&mode);
-		else
-			setMode(&mode);
-
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glBindTexture(GL_TEXTURE_2D, texture);
+
 		shader1.use();
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

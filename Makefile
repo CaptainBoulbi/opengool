@@ -28,8 +28,6 @@ $(shell mkdir -p build)
 
 
 all : $(BIN)
-	echo $(LIB)
-	echo $(LIBO)
 
 $(BIN) : $(OBJ) $(LIBO) #build/glad.o build/stb_image_imp.o
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -61,7 +59,7 @@ run : $(BIN)
 	./$< $(input)
 
 clean :
-	rm -rf build/*
+	rm -rf build/*.o build/*.d $(BIN)
 
 debug : $(BIN)
 	gdb $< $(input)
@@ -81,6 +79,10 @@ install :
 info :
 	$(info put what ever)
 	@echo you want
+	
+check :
+	cppcheck --enable=all --suppress=missingInclude missingIncludeSystem -Iinclude src
+	flawfinder src
 
 # alias
 
@@ -94,4 +96,4 @@ p : push
 
 d : debug
 
-.PHONY : all test t alltest run r clean c debug d dist push p install info
+.PHONY : all test t alltest run r clean c debug d dist push p install info check
