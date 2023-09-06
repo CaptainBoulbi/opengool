@@ -111,8 +111,10 @@ void renderLoop(GLFWwindow* window){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	stbi_set_flip_vertically_on_load(1);
+
 	int width, height, nrChannels;
-	unsigned char *data = stbi_load("data/tlc.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("data/vim.jpg", &width, &height, &nrChannels, 0);
 
 	if (data){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
