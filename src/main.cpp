@@ -23,8 +23,10 @@ unsigned int loadShader();
 void processInput(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+//const unsigned int SCR_WIDTH = 800;
+//const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 int main(){
 	GLFWwindow* window = setup();
@@ -135,6 +137,7 @@ void renderLoop(GLFWwindow* window){
 		-0.5f, -0.5f, 0.0f, 0.0f,
 		-0.5f,  0.5f, 0.0f, 1.0f
 	};
+
 	unsigned int indices[] = {
 		0, 1, 3,
 		1, 2, 3,
@@ -186,6 +189,15 @@ void renderLoop(GLFWwindow* window){
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+	glm::mat4 model(1.0f);
+	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+
+	glm::mat4 view(1.0f);
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
+
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	std::cout << std::endl;
     for (int i=0; !glfwWindowShouldClose(window); i++){
@@ -197,12 +209,16 @@ void renderLoop(GLFWwindow* window){
 
 		shader1.use();
 
-		glm::mat4 trans(1.0f);
-		trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
-		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-		float jsp = std::sin(glfwGetTime());
-		trans = glm::scale(trans, glm::vec3(jsp));
-		shader1.setMat4("transform", trans);
+		//glm::mat4 trans(1.0f);
+		//trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
+		//trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		//float jsp = std::sin(glfwGetTime());
+		//trans = glm::scale(trans, glm::vec3(jsp));
+		//shader1.setMat4("transform", trans);
+
+		shader1.setMat4("model", model);
+		shader1.setMat4("view", view);
+		shader1.setMat4("projection", projection);
 
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
