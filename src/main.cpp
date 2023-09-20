@@ -200,6 +200,8 @@ void renderLoop(GLFWwindow* window){
 		glm::mat4 trans(1.0f);
 		trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
 		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		float jsp = std::sin(glfwGetTime());
+		trans = glm::scale(trans, glm::vec3(jsp));
 		shader1.setMat4("transform", trans);
 
 		glBindVertexArray(VAO);
