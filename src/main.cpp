@@ -225,7 +225,8 @@ void renderLoop(GLFWwindow* window){
 		std::chrono::duration<double> elapsed_seconds = end - start;
 		if (!(i%5)){
 			puts("\033[2F");
-			std::cout << "fps : " << (int)(1 / elapsed_seconds.count()) << "      " << std::endl;
+			std::cout << "fps : " << (int)(1 / elapsed_seconds.count());
+			std::cout << "    ms : " << elapsed_seconds.count() * 1000 << "    " << glfwGetTime() << "    " << std::endl;
 		}
     }
 
