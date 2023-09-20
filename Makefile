@@ -59,7 +59,7 @@ run : $(BIN)
 	./$< $(input)
 
 clean :
-	rm -rf build/*.o build/*.d $(BIN)
+	rm -rf build/*.o build/*.d build/*.t $(BIN)
 
 debug : $(BIN)
 	gdb $< $(input)
