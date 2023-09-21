@@ -86,6 +86,7 @@ void processInput(GLFWwindow *window){
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 	glViewport(0, 0, width, height);
+	std::cout << window << std::endl;
 }
 
 void clearErr(){
@@ -192,7 +193,7 @@ void renderLoop(GLFWwindow* window){
 	stbi_set_flip_vertically_on_load(1);
 
 	int width, height, nrChannels;
-	unsigned char *data = stbi_load("data/whyareyougay.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("data/macaque.jpg", &width, &height, &nrChannels, 0);
 
 	if (data){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
