@@ -203,6 +203,11 @@ void renderLoop(GLFWwindow* window){
 	}
 	stbi_image_free(data);
 
+	glm::mat4 view(1.0f);
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
+	glm::mat4 projection(1.0f);
+	projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	std::cout << std::endl;
 	for (int i=0; !glfwWindowShouldClose(window); i++){
@@ -217,11 +222,6 @@ void renderLoop(GLFWwindow* window){
 
 		shader1.use();
 
-		glm::mat4 view(1.0f);
-		glm::mat4 projection(1.0f);
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
-		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
 		shader1.setMat4("view", view);
 		shader1.setMat4("projection", projection);
 
@@ -230,7 +230,7 @@ void renderLoop(GLFWwindow* window){
 		{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * (i+1) + (float)glfwGetTime() * 100;
+			float angle = 20.0f * i + (float)glfwGetTime() * 100;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			shader1.setMat4("model", model);
 
