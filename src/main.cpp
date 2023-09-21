@@ -28,6 +28,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
 
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
 int main(){
 	GLFWwindow* window = setup();
 
@@ -80,13 +84,30 @@ GLFWwindow* setup(){
 
 void processInput(GLFWwindow *window){
 	// qwerty key ;(
-	if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
+	float cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		cameraSpeed = 0.25f;
+	else
+		cameraSpeed = 0.05f;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		cameraPos += cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		cameraPos -= cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+		cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 	glViewport(0, 0, width, height);
-	std::cout << window << std::endl;
+	std::cout << window;
 }
 
 void clearErr(){
@@ -202,9 +223,9 @@ void renderLoop(GLFWwindow* window){
 		std::cout << "Failled to load texture" << std::endl;
 	}
 	stbi_image_free(data);
+	
+	glm::mat4 view;
 
-	glm::mat4 view(1.0f);
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
 	glm::mat4 projection(1.0f);
 	projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
@@ -220,17 +241,18 @@ void renderLoop(GLFWwindow* window){
 		glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-		shader1.use();
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
+		shader1.use();
 		shader1.setMat4("view", view);
 		shader1.setMat4("projection", projection);
 
 		glBindVertexArray(VAO);
-		for(unsigned int i = 0; i < 10; i++)
-		{
+		for(unsigned int i = 0; i < 10; i++){
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i + (float)glfwGetTime() * 100;
+			float angle = 20.0f * i + std::sin((float)glfwGetTime()) * 100;
+			if (i%2) angle *= -1;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			shader1.setMat4("model", model);
 
