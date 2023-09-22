@@ -25,12 +25,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 //const unsigned int SCR_WIDTH = 800;
 //const unsigned int SCR_HEIGHT = 600;
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+unsigned int SCR_WIDTH = 1920;
+unsigned int SCR_HEIGHT = 1080;
 
 glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
+float deltaTime = 0.0f;
+float timeLastFrame = 0.0f;
+float currentTime = 0.0f;
 
 int main(){
 	GLFWwindow* window = setup();
@@ -87,11 +91,11 @@ void processInput(GLFWwindow *window){
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	float cameraSpeed;
+	float cameraSpeed = deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		cameraSpeed = 0.25f;
+		cameraSpeed *= 5.0f;
 	else
-		cameraSpeed = 0.05f;
+		cameraSpeed *= 4.0f;
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		cameraPos += cameraSpeed * cameraFront;
@@ -106,8 +110,9 @@ void processInput(GLFWwindow *window){
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
+	SCR_WIDTH = width;
+	SCR_HEIGHT = height;
 	glViewport(0, 0, width, height);
-	std::cout << window;
 }
 
 void clearErr(){
@@ -126,6 +131,12 @@ void getErr(){
 
 void tearDown(){
 	glfwTerminate();
+}
+
+void frameTime(){
+	timeLastFrame = currentTime;
+	currentTime= glfwGetTime();
+	deltaTime = currentTime - timeLastFrame;
 }
 
 void renderLoop(GLFWwindow* window){
@@ -223,16 +234,11 @@ void renderLoop(GLFWwindow* window){
 		std::cout << "Failled to load texture" << std::endl;
 	}
 	stbi_image_free(data);
-	
-	glm::mat4 view;
 
-	glm::mat4 projection(1.0f);
-	projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	std::cout << std::endl << std::endl << std::endl;
 
-	std::chrono::time_point<std::chrono::system_clock> start, end;
-	std::cout << std::endl;
 	for (int i=0; !glfwWindowShouldClose(window); i++){
-		start = std::chrono::system_clock::now();
+		frameTime();
 		processInput(window);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -241,7 +247,8 @@ void renderLoop(GLFWwindow* window){
 		glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		shader1.use();
 		shader1.setMat4("view", view);
@@ -251,7 +258,7 @@ void renderLoop(GLFWwindow* window){
 		for(unsigned int i = 0; i < 10; i++){
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i + std::sin((float)glfwGetTime()) * 100;
+			float angle = 20.0f * i + std::sin(currentTime) * 100;
 			if (i%2) angle *= -1;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			shader1.setMat4("model", model);
@@ -262,12 +269,11 @@ void renderLoop(GLFWwindow* window){
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		end = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = end - start;
 		if (!(i%5)){
-			puts("\033[2F");
-			std::cout << "fps : " << (int)(1 / elapsed_seconds.count());
-			std::cout << "    ms : " << elapsed_seconds.count() * 1000 << "    " << glfwGetTime() << "    " << std::endl;
+			puts("\033[4F");
+			std::cout << "fps : " << (int)(1 / deltaTime) << "    " << std::endl;
+			std::cout << "ms : " << deltaTime * 1000 << "    " << std::endl;
+			std::cout << "lt : " << glfwGetTime() << "    " << std::endl;
 		}
 	}
 
