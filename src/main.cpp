@@ -34,7 +34,6 @@ float pitch = 0.0f;
 float lastX = SCR_WIDTH/2;
 float lastY = SCR_HEIGHT/2;
 float sensitivity = 0.1f;
-bool firstMouse = true;
 
 float FOV = 45.0f;
 
@@ -96,6 +95,9 @@ GLFWwindow* setup(){
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 
+	yaw = -90.0f;
+	pitch = 0.0f;
+
 	return window;
 }
 
@@ -124,10 +126,13 @@ void processInput(GLFWwindow *window){
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS){
 		FOV = 5.0f;
-	else
+		sensitivity = 0.05f;
+	}else{
 		FOV = 45.0f;
+		sensitivity = 0.1f;
+	}
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -138,12 +143,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos){
-	if (firstMouse){
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
 	float xoffset = xpos - lastX;
 	float yoffset = lastY - ypos;
 	lastX = xpos;
@@ -190,6 +189,7 @@ void frameTime(){
 }
 
 void renderLoop(GLFWwindow* window){
+
 	Shader shader1("shader/1.vs", "shader/1.fs");
 
 	float vertices[] = {
