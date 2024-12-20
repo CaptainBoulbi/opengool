@@ -1,7 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <glad/glad.h>
+// #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <string>
@@ -50,7 +50,9 @@ public:
         // 2. compile shaders
         unsigned int vertex, fragment;
         // vertex shader
+        std::cout << "ici" << std::endl;
         vertex = glCreateShader(GL_VERTEX_SHADER);
+        std::cout << "la ba" << std::endl;
         glShaderSource(vertex, 1, &vShaderCode, NULL);
         glCompileShader(vertex);
         checkCompileErrors(vertex, "VERTEX");

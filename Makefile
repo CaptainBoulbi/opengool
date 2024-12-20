@@ -15,13 +15,13 @@ endif
 DEPFLAGS=-MP -MD
 MACROS=DEBUG=1
 FLAGS=-Wall -Wextra $(foreach F,$(INCDIRS),-I$(F)) $(OPT) $(DEPFLAGS) $(foreach M,$(MACROS),-D$(M))
-LDFLAGS=lib/libglfw3.a $(FLAGS) -Llib -lX11
+LDFLAGS= $(FLAGS) -Llib -lX11 -lXrandr -lX11 -lm -lGL
 
 SRC=$(shell find . -name "*.$(EXT)" -path "./src/*")
 OBJ=$(subst ./src/,./build/,$(SRC:.$(EXT)=.o))
 TEST=$(shell find . -name "*.$(EXT)" -path "./test/*")
 TESTO=$(subst ./test/,./build/,$(TEST:.$(EXT)=.t))
-LIB=glad stb_image_imp
+LIB=stb_image_imp
 LIBO=$(foreach L,$(LIB),build/$(L).l)
 
 $(shell mkdir -p build)

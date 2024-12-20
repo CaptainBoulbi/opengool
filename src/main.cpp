@@ -1,5 +1,13 @@
-#include "glad/glad.h"
-#include "GLFW/glfw3.h"
+#define RGL_LOAD_IMPLEMENTATION
+#include "rglLoad.h"
+
+#define RGFW_ALLOC_DROPFILES
+#define RGFW_IMPLEMENTATION
+#define RGFW_PRINT_ERRORS
+#include <RGFW.h>
+
+// #include "glad/glad.h"
+// #include "GLFW/glfw3.h"
 #include "stb_image.h"
 
 #include "glm/glm.hpp"
@@ -14,15 +22,15 @@
 
 #include "shader.hpp"
 
-GLFWwindow* setup();
-void renderLoop(GLFWwindow* window);
+RGFW_window* setup();
+void renderLoop(RGFW_window* window);
 void tearDown();
 
 unsigned int loadShader();
 
-void processInput(GLFWwindow *window);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processEvent(RGFW_window *window);
+void framebuffer_size_callback(RGFW_window* window, int width, int height);
+void mouse_callback(RGFW_window* window, double xpos, double ypos);
 
 //const unsigned int SCR_WIDTH = 800;
 //const unsigned int SCR_HEIGHT = 600;
@@ -44,9 +52,10 @@ glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 float deltaTime = 0.0f;
 float timeLastFrame = 0.0f;
 float currentTime = 0.0f;
+u64 beginTime = 0.0f;
 
 int main(){
-	GLFWwindow* window = setup();
+	RGFW_window* window = setup();
 
 	renderLoop(window);
 
@@ -54,31 +63,38 @@ int main(){
 	return 0;
 }
 
-GLFWwindow* setup(){
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+RGFW_window* setup(){
+	// glfwInit();
+	// glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	// glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	// glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	RGFW_setGLVersion(RGFW_GL_CORE, 3, 3);
 
 #ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "8===D", NULL, NULL);
+	RGFW_window* window = RGFW_createWindow("8===3,", RGFW_RECT(SCR_WIDTH, SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT), RGFW_HIDE_MOUSE);
 	if (window == NULL){
 		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
+		// glfwTerminate();
 		assert("Failed to create GLFW window");
 	}
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
+    RGFW_window_makeCurrent(window);
+	// glfwSwapInterval(0);
+	// glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	// glfwSetCursorPosCallback(window, mouse_callback);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		assert("Failed to initialize GLAD");
-	}    
+    RGFW_window_mouseHold(window, {SCR_WIDTH, SCR_HEIGHT});
+
+    u8 cursor[1] = {0};
+    RGFW_window_setMouse(window, cursor, {1, 1}, 3);
+    // RGFW_window_setMouseStandard(window, 0);
+
+    if (RGL_loadGL3((RGLloadfunc)RGFW_getProcAddress)) {
+        assert("Failed to initialize GLAD\n");
+    }
 
 	// wireframe mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -94,60 +110,75 @@ GLFWwindow* setup(){
 
 	glEnable(GL_DEPTH_TEST);
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 
 	yaw = -90.0f;
 	pitch = 0.0f;
 
+    beginTime = RGFW_getTimeNS();
+
 	return window;
 }
 
-void processInput(GLFWwindow *window){
-	// qwerty key ;(
-	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
+void processEvent(RGFW_window *window) {
+    while (RGFW_window_checkEvent(window)) {
+        if (window->event.type == RGFW_quit || RGFW_isPressed(window, RGFW_Escape)) {
+            RGFW_window_setShouldClose(window);
+        }
+        if (window->event.type == RGFW_windowResized) {
+            SCR_WIDTH = window->r.w;
+            SCR_HEIGHT = window->r.h;
+            glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        }
+        // qwerty key ;(
 
-	float cameraSpeed = deltaTime * 4.0f;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		cameraSpeed *= 2.0f;
+        float cameraSpeed = deltaTime * 4.0f;
+        if (RGFW_isPressed(window, RGFW_ControlL))
+            cameraSpeed *= 2.0f;
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		cameraPos.y -= cameraSpeed;
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		cameraPos.y += cameraSpeed;
+        if (RGFW_isPressed(window, RGFW_ShiftL))
+            cameraPos.y -= cameraSpeed;
+        if (RGFW_isPressed(window, RGFW_Space))
+            cameraPos.y += cameraSpeed;
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-		cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+        if (RGFW_isPressed(window, RGFW_w))
+            cameraPos += cameraSpeed * cameraFront;
+        if (RGFW_isPressed(window, RGFW_s))
+            cameraPos -= cameraSpeed * cameraFront;
+        if (RGFW_isPressed(window, RGFW_a))
+            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        if (RGFW_isPressed(window, RGFW_d))
+            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        if (RGFW_isPressed(window, RGFW_p))
+            cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS){
-		FOV = 5.0f;
-		sensitivity = 0.05f;
-	}else{
-		FOV = 45.0f;
-		sensitivity = 0.1f;
-	}
+        if (RGFW_isPressed(window, RGFW_z)){
+            FOV = 5.0f;
+            sensitivity = 0.05f;
+        }else{
+            FOV = 45.0f;
+            sensitivity = 0.1f;
+        }
+
+        if (window->event.type == RGFW_mousePosChanged) {
+            mouse_callback(window, window->event.point.x, window->event.point.y);
+        }
+    }
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height){
+void framebuffer_size_callback(RGFW_window* window, int width, int height){
 	std::cerr << window << std::endl;
 	SCR_WIDTH = width;
 	SCR_HEIGHT = height;
 	glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos){
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
+void mouse_callback(RGFW_window* window, double xpos, double ypos){
+    (void) window;
+	float xoffset = xpos;
+	float yoffset = -ypos;
+	// lastX = xpos;
+	// lastY = ypos;
 
 	xoffset *= sensitivity;
 	yoffset *= sensitivity;
@@ -180,18 +211,19 @@ void getErr(){
 }
 
 void tearDown(){
-	glfwTerminate();
+	// glfwTerminate();
 }
 
 void frameTime(){
 	timeLastFrame = currentTime;
-	currentTime= glfwGetTime();
+	currentTime = (float)(RGFW_getTimeNS() - beginTime) / 1000 / 1000 / 1000;
 	deltaTime = currentTime - timeLastFrame;
 }
 
-void renderLoop(GLFWwindow* window){
+void renderLoop(RGFW_window* window){
 
 	Shader shader1("shader/1.vs", "shader/1.fs");
+
 
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -287,9 +319,9 @@ void renderLoop(GLFWwindow* window){
 	stbi_image_free(data);
 
 	std::cout << std::endl << std::endl << std::endl;
-	for (int i=0; !glfwWindowShouldClose(window); i++){
+	for (int i=0; !RGFW_window_shouldClose(window); i++){
 		frameTime();
-		processInput(window);
+		processEvent(window);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -316,15 +348,18 @@ void renderLoop(GLFWwindow* window){
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		RGFW_window_swapBuffers(window);
+		// glfwPollEvents();
 
 		if (!(i%5)){
 			puts("\033[4F");
-			std::cout << "fps : " << (int)(1 / deltaTime) << "    " << std::endl;
-			std::cout << "ms : " << deltaTime * 1000 << "    " << std::endl;
-			std::cout << "lt : " << glfwGetTime() << "    " << std::endl;
+			std::cout << "fps : " << (int)(1 / deltaTime) << "           " << std::endl;
+			std::cout << "ms : " << deltaTime * 1000 << "           " << std::endl;
+			std::cout << "lt : " << (RGFW_getTimeNS() - beginTime) / (1000*1000*1000) << "           " << std::endl;
 		}
+
+        // printf("test: %f\n", (float)(RGFW_getTimeNS() - beginTime) / 1000 / 1000);
+        // printf("delt: %f\n", deltaTime);
 	}
 
 	clearErr();
